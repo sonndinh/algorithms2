@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.StdOut;
@@ -12,6 +13,7 @@ public class BoggleSolver {
 
 	private final TST<Integer> dict;
 	private Color[][] colors;
+	private List<List<List<Dice>>> nbors;
 
 	// Initializes the data structure using the given array of strings as the
 	// dictionary.
@@ -26,8 +28,8 @@ public class BoggleSolver {
 	}
 
 	private class Dice {
-		private int row;
-		private int col;
+		private final int row;
+		private final int col;
 
 		public Dice(int i, int j) {
 			row = i;
@@ -38,7 +40,7 @@ public class BoggleSolver {
 	// Return neighbors of the dice at row ith, column jth.
 	// rows and cols are the numbers of rows and columns of the board.
 	private Iterable<Dice> neighbors(int i, int j, int rows, int cols) {
-		ArrayList<Dice> list = new ArrayList<Dice>();
+		List<Dice> list = new ArrayList<Dice>();
 		if (rows == 1 && cols > 1) {
 			if (j == 0) {
 				list.add(new Dice(i, j + 1));
@@ -123,7 +125,7 @@ public class BoggleSolver {
 
 	private void dfsVisit(BoggleBoard board, int i, int j, int rows, int cols, StringBuilder str,
 			HashSet<String> words) {
-		Iterable<Dice> adj = neighbors(i, j, rows, cols);
+		List<Dice> adj = nbors.get(i).get(j);
 		for (Dice d : adj) {
 			if (colors[d.row][d.col] == Color.WHITE) {
 				if (board.getLetter(d.row, d.col) == 'Q') {
@@ -131,7 +133,7 @@ public class BoggleSolver {
 				} else {
 					str.append(board.getLetter(d.row, d.col));
 				}
-				
+
 				// Backtrack from branch with an unmatched prefix
 				if (checkSize(dict.keysWithPrefix(str.toString())) == 0) {
 					if (board.getLetter(d.row, d.col) == 'Q') {
@@ -168,6 +170,18 @@ public class BoggleSolver {
 			}
 		}
 
+		// Pre-compute neighbors list for each position in the board
+		nbors = new ArrayList<List<List<Dice>>>();
+		for (int i = 0; i < rows; i++) {
+			nbors.add(new ArrayList<List<Dice>>());
+			for (int j = 0; j < cols; j++) {
+				nbors.get(i).add(new ArrayList<Dice>());
+				for (Dice item : neighbors(i, j, rows, cols)) {
+					nbors.get(i).get(j).add(item);
+				}
+			}
+		}
+
 		HashSet<String> words = new HashSet<String>();
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < cols; j++) {
@@ -197,6 +211,10 @@ public class BoggleSolver {
 	// otherwise.
 	// (You can assume the word contains only the uppercase letters A through Z.)
 	public int scoreOf(String word) {
+		if (!dict.contains(word)) {
+			return 0;
+		}
+		
 		int length = word.length();
 
 		if (length <= 2) {
